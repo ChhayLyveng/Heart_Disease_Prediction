@@ -1,0 +1,277 @@
+﻿--- CELL 1 ---
+# Heart Disease EDA & Prediction
+
+End-to-end pipeline: data cleaning ΓåÆ exploratory analysis ΓåÆ five ML models ΓåÆ comparison.
+
+**Dataset:** 303 patients, 36 features (clinical measurements + engineered risk features).
+
+---
+
+--- CELL 2 ---
+## Step 1 ΓÇö Import Libraries
+
+--- CELL 3 ---
+---
+# Part 1 ΓÇö Data Loading & Cleaning
+
+--- CELL 4 ---
+## 1.1 Load Dataset
+
+--- CELL 5 ---
+## 1.2 Inspect Structure
+
+--- CELL 6 ---
+## 1.3 Rename Columns
+
+Rename raw column codes to descriptive names before any analysis.
+
+--- CELL 7 ---
+## 1.4 Handle Missing Values
+
+**Numerical columns** ΓÇö filled with the median (robust to outliers).
+
+**Categorical columns** ΓÇö filled with the mode (most frequent category).
+
+--- CELL 8 ---
+## 1.5 Check for Duplicate Records
+
+Duplicate rows can bias models by over-weighting repeated observations.
+
+--- CELL 9 ---
+## 1.6 Summary Statistics
+
+--- CELL 10 ---
+## 1.7 Save Cleaned Dataset
+
+--- CELL 11 ---
+---
+# Part 2 ΓÇö Exploratory Data Analysis
+
+Summary statistics provide an overview of clinical variables such as cholesterol levels, resting blood pressure, and maximum heart rate.
+
+--- CELL 12 ---
+## 2.1 Target Variable Distribution
+
+--- CELL 13 ---
+## 2.2 Univariate Analysis ΓÇö Numerical Features
+
+--- CELL 14 ---
+## 2.3 Univariate Analysis ΓÇö Categorical Features
+
+--- CELL 15 ---
+## 2.4 Bivariate Analysis ΓÇö Features vs Heart Disease
+
+--- CELL 16 ---
+## 2.5 Scatter Plots ΓÇö Key Clinical Relationships
+
+--- CELL 17 ---
+## 2.6 3D Visualization & Pair Grid
+
+--- CELL 18 ---
+---
+# Part 3 ΓÇö Shared Modelling Setup
+
+All five models share the same train/test split and feature set. This section runs once.
+
+--- CELL 19 ---
+## 3.1 Create Binary Target
+
+The original `Heart_Disease_Level` has values 0ΓÇô4. We convert it to binary: **0 = healthy, 1 = disease**.
+
+--- CELL 20 ---
+## 3.2 Feature Selection
+
+Features chosen are clinically meaningful, numerical, and non-redundant.
+
+| Feature | Description |
+|---|---|
+| `Age` | Patient age |
+| `Gender` | Gender (1=male, 0=female) |
+| `Chest_Pain_Type` | Chest pain type (1ΓÇô4) |
+| `Resting_BP` | Resting blood pressure |
+| `Cholesterol` | Serum cholesterol |
+| `High_Blood_Sugar` | Fasting blood sugar > 120 mg/dl |
+| `Heart_Test_Result` | Resting ECG results |
+| `Max_Heart_Rate` | Max heart rate achieved |
+| `Chest_Pain_Exercise` | Exercise-induced angina |
+| `Heart_Stress_Level` | ST depression induced by exercise |
+| `Heart_R
+
+--- CELL 21 ---
+## 3.3 Train / Test Split & Scaling
+
+--- CELL 22 ---
+---
+# Part 4 ΓÇö Logistic Regression
+
+**Goal:** Linear baseline. Coefficients give direct interpretability.
+
+**Requires feature scaling** ΓÇö uses `X_train_scaled` / `X_test_scaled`.
+
+--- CELL 23 ---
+## 4.1 Train
+
+--- CELL 24 ---
+## 4.2 Evaluate
+
+--- CELL 25 ---
+## 4.3 Feature Importance (Coefficients)
+
+--- CELL 26 ---
+## 4.4 Overfitting Check
+
+--- CELL 27 ---
+## 4.5 Summary
+
+| Metric | Value |
+|---|---|
+| Model | Logistic Regression |
+| Features used | 16 (clinical + engineered) |
+| Train / Test split | 80% / 20% |
+| Preprocessing | StandardScaler, median imputation |
+| Test Accuracy | **86.9%** |
+| ROC-AUC | **0.952** (Excellent) |
+
+**Key findings:** `Chest_Pain_Type`, `Blood_Flow_Test`, `Blocked_Vessels`, and `Heart_Stress_Level` are the strongest predictors. `Max_Heart_Rate` is negatively correlated ΓÇö a higher exercise heart rate is generally healthier.
+
+--- CELL 28 ---
+---
+# Part 5 ΓÇö Random Forest
+
+**Why Random Forests?** Combines many Decision Trees to reduce variance and overfitting, handles non-linear relationships, and provides built-in Gini importance scores.
+
+**Does not require feature scaling** ΓÇö uses raw `X_train` / `X_test`.
+
+--- CELL 29 ---
+## 5.1 Train
+
+--- CELL 30 ---
+## 5.2 Evaluate
+
+--- CELL 31 ---
+## 5.3 Feature Importance (Gini)
+
+Higher score = more reduction in node impurity across all trees.
+
+--- CELL 32 ---
+## 5.4 Overfitting Check
+
+--- CELL 33 ---
+## 5.5 Summary
+
+| Metric | Value |
+|---|---|
+| Model | Random Forest |
+| Features used | 16 (clinical + engineered) |
+| Train / Test split | 80% / 20% |
+| Preprocessing | Median imputation (**no scaling needed**) |
+| n_estimators | 100 trees |
+| Test Accuracy | *(run to see)* |
+| ROC-AUC | *(run to see)* |
+
+--- CELL 34 ---
+---
+# Part 6 ΓÇö Support Vector Machine (SVM)
+
+**Why SVM?** Finds the maximum-margin hyperplane between classes. Effective on small-to-medium, high-feature-count datasets. The RBF kernel captures non-linear boundaries.
+
+**Requires feature scaling** ΓÇö uses `X_train_scaled` / `X_test_scaled`.
+
+--- CELL 35 ---
+## 6.1 Train
+
+`probability=True` is required to compute `predict_proba()` for ROC-AUC.
+
+--- CELL 36 ---
+## 6.2 Evaluate
+
+--- CELL 37 ---
+## 6.3 Feature Importance (Permutation Importance)
+
+The RBF kernel has no linear coefficients to read. We use **Permutation Importance** instead: shuffle one feature at a time and measure the resulting accuracy drop ΓÇö a large drop means the feature mattered.
+
+--- CELL 38 ---
+## 6.4 Overfitting Check
+
+--- CELL 39 ---
+## 6.5 Summary
+
+| Metric | Value |
+|---|---|
+| Model | SVM (RBF kernel) |
+| Features used | 16 (clinical + engineered) |
+| Train / Test split | 80% / 20% |
+| Preprocessing | StandardScaler (**scaling required**) |
+| Kernel | RBF (`C=1.0`, `gamma='scale'`) |
+| Test Accuracy | *(run to see)* |
+| ROC-AUC | *(run to see)* |
+
+--- CELL 40 ---
+---
+# Part 7 ΓÇö Gradient Boosting (XGBoost & LightGBM)
+
+**Why Gradient Boosting?** Builds trees sequentially ΓÇö each tree corrects the errors of the previous one. State-of-the-art on structured/tabular data. Built-in regularization prevents overfitting.
+
+**Does not require feature scaling** ΓÇö uses raw `X_train` / `X_test`.
+
+| | XGBoost | LightGBM |
+|---|---|---|
+| Tree growth | Depth-wise | Leaf-wise (faster) |
+| Speed on large data | Moderate | Very fast |
+| Memory usage | Higher | Lower |
+
+--- CELL 41 ---
+## 7.1 Train XGBoost
+
+--- CELL 42 ---
+## 7.2 Evaluate XGBoost
+
+--- CELL 43 ---
+## 7.3 Train LightGBM
+
+--- CELL 44 ---
+## 7.4 Evaluate LightGBM
+
+--- CELL 45 ---
+## 7.5 Feature Importance Comparison
+
+--- CELL 46 ---
+## 7.6 Overfitting Check
+
+--- CELL 47 ---
+## 7.7 Summary
+
+| Metric | XGBoost | LightGBM |
+|---|---|---|
+| Features used | 16 | 16 |
+| Train / Test split | 80% / 20% | 80% / 20% |
+| Preprocessing | Median imputation (**no scaling**) | Same |
+| n_estimators | 100 | 100 |
+| max_depth | 4 | 4 |
+| learning_rate | 0.1 | 0.1 |
+| Test Accuracy | *(run to see)* | *(run to see)* |
+| ROC-AUC | *(run to see)* | *(run to see)* |
+
+--- CELL 48 ---
+---
+# Part 8 ΓÇö Model Comparison
+
+All five models evaluated on the same held-out test set.
+
+--- CELL 49 ---
+## Final Summary
+
+| Model | Feature Scaling | Feature Importance Method | Best For |
+|---|---|---|---|
+| Logistic Regression | Γ£à Required | Coefficients (linear) | Interpretability, medical baseline |
+| Random Forest | Γ¥î Not required | Gini impurity | Robust, non-linear, handles outliers |
+| SVM (RBF) | Γ£à Required | Permutation Importance | Small datasets, non-linear boundaries |
+| XGBoost | Γ¥î Not required | Gain / weight | High accuracy, tabular data |
+| LightGBM | Γ¥î Not required | Gain / weight | Fast training, large datasets |
+
+--- CELL 50 ---
+---
+# Part 9 ΓÇö Save All Models
+
+Persist every trained model with `joblib` (recommended for scikit-learn objects).
+

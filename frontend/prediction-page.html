@@ -1,0 +1,1004 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heart Disease Prediction — End-to-End ML Pipeline</title>
+    <meta name="description" content="Predict heart disease risk using our trained ML models (Logistic Regression, Random Forest, SVM, XGBoost, LightGBM) on 13 clinical features + derived risk score.">
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        /* ─── PREDICTION PAGE EXTRAS ────────────────── */
+        .prediction-hero {
+            min-height: 55vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 7rem 2rem 4rem;
+            background: linear-gradient(170deg, #fdfcf8 0%, #f8faf9 30%, #eef7f5 100%);
+            position: relative;
+            overflow: hidden;
+        }
+        .prediction-hero::before {
+            content: '';
+            position: absolute;
+            top: -120px;
+            right: -180px;
+            width: 550px;
+            height: 550px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(20, 184, 166, 0.08) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .prediction-hero::after {
+            content: '';
+            position: absolute;
+            bottom: -80px;
+            left: -120px;
+            width: 400px;
+            height: 400px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(11, 45, 69, 0.04) 0%, transparent 70%);
+            pointer-events: none;
+        }
+        .prediction-hero-inner {
+            max-width: 780px;
+            text-align: center;
+            position: relative;
+            z-index: 1;
+        }
+        /* ─── PREDICTION FORM SECTION ─────────────── */
+        .prediction-section {
+            padding: 5rem 2rem 6rem;
+            background: var(--color-white);
+        }
+        .prediction-layout {
+            max-width: 1100px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 380px;
+            gap: 3rem;
+            align-items: start;
+        }
+
+        /* Form card */
+        .form-card {
+            background: var(--color-white);
+            border: 1px solid var(--color-gray-200);
+            border-radius: var(--radius-xl);
+            padding: 2.5rem 2.25rem;
+            box-shadow: var(--shadow-md);
+        }
+        .form-card h3 {
+            font-size: 1.4rem;
+            font-weight: 700;
+            color: var(--color-deep-blue);
+            letter-spacing: -0.02em;
+            margin-bottom: 0.4rem;
+            font-family: var(--font-serif);
+        }
+        .form-card .form-subtitle {
+            color: var(--color-gray-500);
+            font-size: 0.9rem;
+            margin-bottom: 2rem;
+        }
+        .form-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.1rem 1.5rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        .form-group.full-width {
+            grid-column: 1 / -1;
+        }
+        .form-group label {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--color-gray-700);
+            margin-bottom: 0.35rem;
+            display: flex;
+            align-items: center;
+            gap: 0.4rem;
+        }
+        .form-group label .label-hint {
+            font-weight: 400;
+            color: var(--color-gray-400);
+            font-size: 0.78rem;
+        }
+        .form-group input[type="number"],
+        .form-group select {
+            width: 100%;
+            padding: 0.7rem 0.95rem;
+            border: 1.5px solid var(--color-gray-300);
+            border-radius: var(--radius-md);
+            font-family: var(--font-sans);
+            font-size: 0.92rem;
+            color: var(--color-gray-800);
+            background: var(--color-gray-50);
+            transition: all var(--transition);
+            appearance: none;
+            -webkit-appearance: none;
+        }
+        .form-group select {
+            background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%236b7280' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+            background-repeat: no-repeat;
+            background-position: right 0.85rem center;
+            padding-right: 2.25rem;
+            cursor: pointer;
+        }
+        .form-group input[type="number"]:focus,
+        .form-group select:focus {
+            outline: none;
+            border-color: var(--color-teal-light);
+            box-shadow: 0 0 0 4px rgba(20, 184, 166, 0.1);
+            background: var(--color-white);
+        }
+        .form-actions {
+            margin-top: 1.75rem;
+            display: flex;
+            gap: 1rem;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .btn-predict {
+            padding: 0.85rem 2.4rem;
+            background: var(--color-teal);
+            color: #fff;
+            border: none;
+            border-radius: 9999px;
+            font-weight: 600;
+            font-size: 1rem;
+            cursor: pointer;
+            transition: all var(--transition);
+            letter-spacing: 0.01em;
+            box-shadow: 0 4px 14px rgba(15, 118, 110, 0.3);
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+        }
+        .btn-predict:hover {
+            background: #0d5f58;
+            box-shadow: 0 6px 20px rgba(15, 118, 110, 0.4);
+            transform: translateY(-2px);
+        }
+        .btn-predict:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+            transform: none;
+        }
+        .btn-reset {
+            padding: 0.85rem 1.6rem;
+            background: transparent;
+            color: var(--color-gray-500);
+            border: 1.5px solid var(--color-gray-300);
+            border-radius: 9999px;
+            font-weight: 500;
+            font-size: 0.95rem;
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .btn-reset:hover {
+            border-color: var(--color-gray-500);
+            color: var(--color-gray-700);
+        }
+
+        /* Model selector */
+        .model-selector {
+            margin-bottom: 1.75rem;
+            padding: 1.25rem 1.5rem;
+            background: var(--color-gray-50);
+            border-radius: var(--radius-md);
+            border: 1px solid var(--color-gray-200);
+        }
+        .model-selector p {
+            font-weight: 600;
+            font-size: 0.85rem;
+            color: var(--color-gray-700);
+            margin-bottom: 0.75rem;
+        }
+        .model-chips {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 0.5rem;
+        }
+        .model-chip {
+            padding: 0.4rem 1rem;
+            border-radius: 9999px;
+            font-size: 0.83rem;
+            font-weight: 500;
+            border: 1.5px solid var(--color-gray-300);
+            background: var(--color-white);
+            color: var(--color-gray-600);
+            cursor: pointer;
+            transition: all var(--transition);
+        }
+        .model-chip:hover {
+            border-color: var(--color-teal-light);
+            color: var(--color-teal);
+        }
+        .model-chip.active {
+            background: var(--color-teal);
+            border-color: var(--color-teal);
+            color: #fff;
+        }
+
+        /* Results sidebar */
+        .results-sidebar {
+            position: sticky;
+            top: 80px;
+            display: flex;
+            flex-direction: column;
+            gap: 1.5rem;
+        }
+
+        /* Result card */
+        .result-card {
+            background: var(--color-white);
+            border: 1px solid var(--color-gray-200);
+            border-radius: var(--radius-xl);
+            padding: 2rem 1.75rem;
+            box-shadow: var(--shadow-md);
+            text-align: center;
+            transition: all var(--transition);
+        }
+        .result-card .result-label {
+            font-size: 0.78rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--color-teal);
+            margin-bottom: 1rem;
+        }
+        .result-gauge {
+            width: 130px;
+            height: 130px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            margin: 0 auto 1.25rem;
+            border: 6px solid var(--color-gray-200);
+            transition: all 0.5s ease;
+            position: relative;
+        }
+        .result-gauge.low {
+            border-color: #14b8a6;
+            background: rgba(20, 184, 166, 0.05);
+        }
+        .result-gauge.high {
+            border-color: #e84e4e;
+            background: rgba(232, 78, 78, 0.05);
+        }
+        .result-gauge.idle {
+            border-color: var(--color-gray-200);
+            background: var(--color-gray-50);
+        }
+        .result-gauge .gauge-pct {
+            font-size: 2rem;
+            font-weight: 800;
+            color: var(--color-deep-blue);
+            line-height: 1;
+            letter-spacing: -0.04em;
+        }
+        .result-gauge .gauge-sub {
+            font-size: 0.72rem;
+            color: var(--color-gray-400);
+            margin-top: 0.2rem;
+        }
+        .result-verdict {
+            font-size: 1.2rem;
+            font-weight: 700;
+            color: var(--color-deep-blue);
+            margin-bottom: 0.4rem;
+            letter-spacing: -0.01em;
+        }
+        .result-verdict.low-risk { color: #0d9488; }
+        .result-verdict.high-risk { color: #dc2626; }
+        .result-desc {
+            font-size: 0.88rem;
+            color: var(--color-gray-500);
+            line-height: 1.6;
+        }
+
+        /* Feature importance info card */
+        .info-card {
+            background: var(--color-white);
+            border: 1px solid var(--color-gray-200);
+            border-radius: var(--radius-xl);
+            padding: 1.75rem;
+            box-shadow: var(--shadow-md);
+        }
+        .info-card .info-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--color-teal);
+            margin-bottom: 1rem;
+        }
+        .feature-bar-list {
+            display: flex;
+            flex-direction: column;
+            gap: 0.85rem;
+        }
+        .feature-bar-item {
+            display: flex;
+            flex-direction: column;
+            gap: 0.3rem;
+        }
+        .feature-bar-header {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.82rem;
+            font-weight: 500;
+            color: var(--color-gray-700);
+        }
+        .feature-bar-track {
+            height: 5px;
+            background: var(--color-gray-200);
+            border-radius: 9999px;
+            overflow: hidden;
+        }
+        .feature-bar-fill {
+            height: 100%;
+            border-radius: 9999px;
+            background: linear-gradient(90deg, var(--color-teal) 0%, var(--color-teal-light) 100%);
+            transition: width 0.7s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        /* Model accuracy pills */
+        .model-stats-card {
+            background: var(--color-gray-50);
+            border: 1px solid var(--color-gray-200);
+            border-radius: var(--radius-xl);
+            padding: 1.5rem 1.75rem;
+        }
+        .model-stats-card .info-title {
+            font-size: 0.8rem;
+            font-weight: 600;
+            letter-spacing: 0.06em;
+            text-transform: uppercase;
+            color: var(--color-teal);
+            margin-bottom: 1rem;
+        }
+        .model-stat-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 0.45rem 0;
+            border-bottom: 1px solid var(--color-gray-200);
+            font-size: 0.88rem;
+        }
+        .model-stat-row:last-child { border-bottom: none; }
+        .model-stat-name { color: var(--color-gray-700); font-weight: 500; }
+        .model-stat-badge {
+            background: var(--color-teal-pale);
+            color: var(--color-teal);
+            padding: 0.2rem 0.65rem;
+            border-radius: 9999px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            white-space: nowrap;
+        }
+
+        /* Spinner */
+        .spinner {
+            display: none;
+            width: 18px;
+            height: 18px;
+            border: 2.5px solid rgba(255,255,255,0.4);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 0.65s linear infinite;
+        }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Alert */
+        .alert-banner {
+            display: none;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.85rem 1.25rem;
+            border-radius: var(--radius-md);
+            font-size: 0.9rem;
+            font-weight: 500;
+            margin-top: 1rem;
+        }
+        .alert-banner.error {
+            background: #fef2f2;
+            color: #dc2626;
+            border: 1px solid #fca5a5;
+        }
+        .alert-banner.show { display: flex; }
+
+        /* Responsive */
+        @media (max-width: 960px) {
+            .prediction-layout {
+                grid-template-columns: 1fr;
+            }
+            .results-sidebar {
+                position: static;
+            }
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        @media (max-width: 600px) {
+            .prediction-hero { padding: 5rem 1.25rem 3rem; }
+            .form-card { padding: 1.75rem 1.25rem; }
+        }
+    </style>
+</head>
+<body>
+
+    <nav class="nav" id="navbar">
+        <div class="nav-inner">
+            <a href="index.html" class="nav-logo">
+                <span class="logo-dot"></span> Heart Disease EDA
+            </a>
+            <button class="nav-toggle" id="navToggle" aria-label="Toggle navigation">
+                <span></span><span></span><span></span>
+            </button>
+            <ul class="nav-links" id="navLinks">
+                <li style="display: flex; gap: 0.5rem; align-items: center; margin-right: 0.5rem;">
+                    <button class="model-chip active" id="btnEn" onclick="setLang('en')" style="padding: 0.25rem 0.6rem; font-size: 0.85rem; margin:0;" title="English">English</button>
+                    <button class="model-chip" id="btnKm" onclick="setLang('km')" style="padding: 0.25rem 0.6rem; font-size: 0.85rem; margin:0;" title="Khmer">Khmer</button>
+                </li>
+                <li><a href="prediction-page.html" class="nav-link-active">Prediction</a></li>
+                <li><a href="index.html#what-we-do">Pipeline</a></li>
+                <li><a href="index.html#our-work">Models</a></li>
+                <li><a href="index.html#contact">Summary</a></li>
+                <li><a href="index.html#our-work" class="nav-cta">See the models</a></li>
+            </ul>
+        </div>
+    </nav>
+
+    <section class="prediction-hero" id="hero">
+        <div class="prediction-hero-inner">
+            <span class="hero-badge">ML Prediction Tool</span>
+            <h1>Heart Disease <span class="highlight">Risk Prediction</span></h1>
+            <p class="hero-subtext">
+                Enter your clinical measurements below and let our trained ML models assess your
+                heart disease risk. Based on 303 patients · 13 clinical features + derived risk score · 86.9% accuracy.
+            </p>
+            <div class="hero-tags">
+                <span class="hero-tag">Logistic Regression</span>
+                <span class="hero-tag">Random Forest</span>
+                <span class="hero-tag">SVM</span>
+                <span class="hero-tag">XGBoost</span>
+                <span class="hero-tag">LightGBM</span>
+            </div>
+        </div>
+    </section>
+
+    <section class="prediction-section" id="predict">
+        <div class="prediction-layout">
+
+            <div>
+                <span class="section-label" id="sectionLabel">Clinical Input</span>
+                <h2 class="section-heading" id="sectionHeading">Enter Patient Data.</h2>
+                <p class="section-intro" id="sectionIntro">
+                    Fill in all 13 clinical features used by the models. Values outside normal ranges
+                    will be highlighted. All fields are required.
+                </p>
+
+                <div style="display: flex; gap: 2rem; align-items: flex-start; flex-wrap: wrap; margin-bottom: 1.75rem;">
+                    <div class="model-selector" style="margin-bottom: 0;">
+                        <p id="lblModel">Select prediction model</p>
+                        <div class="model-chips">
+                            <button class="model-chip active" type="button" data-model="logistic">Logistic Regression</button>
+                            <button class="model-chip" type="button" data-model="rf">Random Forest</button>
+                            <button class="model-chip" type="button" data-model="svm">SVM</button>
+                            <button class="model-chip" type="button" data-model="xgboost">XGBoost</button>
+                            <button class="model-chip" type="button" data-model="lightgbm">LightGBM</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="form-card">
+                    <h3 id="formTitle">Clinical Measurements</h3>
+                    <p class="form-subtitle" id="formSub">13 features · derived risk score (age×chol/1000 + bp/100) computed automatically</p>
+
+                    <form id="predictionForm" novalidate>
+                        <div class="form-grid">
+                            <div class="form-group">
+                                <label for="age"><span id="lblAgeText">Age</span> <span class="label-hint">(years)</span></label>
+                                <input type="number" id="age" name="age" min="20" max="100" placeholder="e.g. 54" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="sex" id="lblSexText">Sex</label>
+                                <select id="sex" name="sex" required>
+                                    <option value="" disabled selected>Select…</option>
+                                    <option value="1">Male</option>
+                                    <option value="0">Female</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="chest_pain" id="lblChestText">Chest Pain Type</label>
+                                <select id="chest_pain" name="chest_pain" required>
+                                    <option value="" disabled selected>Select…</option>
+                                    <option value="1">Typical Angina</option>
+                                    <option value="2">Atypical Angina</option>
+                                    <option value="3">Non-Anginal Pain</option>
+                                    <option value="4">Asymptomatic</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="resting_bp"><span id="lblBPText">Resting Blood Pressure</span> <span class="label-hint">(mmHg)</span></label>
+                                <input type="number" id="resting_bp" name="resting_bp" min="80" max="220" placeholder="e.g. 130" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="cholesterol"><span id="lblCholText">Serum Cholesterol</span> <span class="label-hint">(mg/dL)</span></label>
+                                <input type="number" id="cholesterol" name="cholesterol" min="100" max="600" placeholder="e.g. 246" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="fasting_bs" id="lblFBSText">Fasting Blood Sugar</label>
+                                <select id="fasting_bs" name="fasting_bs" required>
+                                    <option value="" disabled selected>Select…</option>
+                                    <option value="1">Yes (&gt;120 mg/dL)</option>
+                                    <option value="0">No (≤120 mg/dL)</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="resting_ecg" id="lblECGText">Resting ECG Results</label>
+                                <select id="resting_ecg" name="resting_ecg" required>
+                                    <option value="" disabled selected>Select…</option>
+                                    <option value="0">Normal</option>
+                                    <option value="1">ST-T Wave Abnormality</option>
+                                    <option value="2">Left Ventricular Hypertrophy</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="max_hr"><span id="lblMaxHRText">Max Heart Rate</span> <span class="label-hint">(bpm)</span></label>
+                                <input type="number" id="max_hr" name="max_hr" min="60" max="220" placeholder="e.g. 150" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="exercise_angina" id="lblExAnginaText">Exercise-Induced Angina</label>
+                                <select id="exercise_angina" name="exercise_angina" required>
+                                    <option value="" disabled selected>Select…</option>
+                                    <option value="1">Yes</option>
+                                    <option value="0">No</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="oldpeak"><span id="lblOldpeakText">ST Depression (Oldpeak)</span> <span class="label-hint">(mm)</span></label>
+                                <input type="number" id="oldpeak" name="oldpeak" min="0" max="10" step="0.1" placeholder="e.g. 1.5" required>
+                            </div>
+                            <div class="form-group">
+                                <label for="st_slope" id="lblSlopeText">ST Slope</label>
+                                <select id="st_slope" name="st_slope" required>
+                                    <option value="" disabled selected>Select…</option>
+                                    <option value="1">Upsloping</option>
+                                    <option value="2">Flat</option>
+                                    <option value="3">Downsloping</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="thal" id="lblThalText">Blood Flow Test (Thal)</label>
+                                <select id="thal" name="thal" required>
+                                    <option value="" disabled selected>Select…</option>
+                                    <option value="3">Normal</option>
+                                    <option value="6">Fixed Defect</option>
+                                    <option value="7">Reversible Defect</option>
+                                </select>
+                            </div>
+                            <div class="form-group">
+                                <label for="ca" id="lblCAText">Blocked Vessels (0–3)</label>
+                                <select id="ca" name="ca" required>
+                                    <option value="" disabled selected>Select…</option>
+                                    <option value="0">0</option>
+                                    <option value="1">1</option>
+                                    <option value="2">2</option>
+                                    <option value="3">3</option>
+                                </select>
+                            </div>
+                        </div>
+
+                        <div class="alert-banner error" id="formAlert" role="alert">
+                            <svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#dc2626" stroke-width="1.5"/><path d="M8 5v3M8 11v.5" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"/></svg>
+                            <span id="txtAlertMsg">Please fill in all required fields before predicting.</span>
+                        </div>
+
+                        <div class="form-actions">
+                            <button type="submit" class="btn-predict" id="predictBtn">
+                                <div class="spinner" id="spinner"></div>
+                                <span id="predictBtnLabel">Predict Risk</span>
+                            </button>
+                            <button type="reset" class="btn-reset" id="resetBtn">Reset</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+            <div class="results-sidebar" id="resultsSidebar">
+                <div class="result-card" id="resultCard">
+                    <p class="result-label" id="resultLabelTitle">Prediction Result</p>
+                    <div class="result-gauge idle" id="resultGauge">
+                        <span class="gauge-pct" id="gaugePct">—</span>
+                        <span class="gauge-sub" id="gaugeSub">risk score</span>
+                    </div>
+                    <p class="result-verdict" id="resultVerdict">Awaiting input</p>
+                    <p class="result-desc" id="resultDesc">
+                        Enter clinical values on the left and click <strong>Predict Risk</strong>
+                        to see the model's assessment.
+                    </p>
+
+                    <div id="ttsControls" style="display: none; justify-content: center; margin-top: 1.5rem;">
+                        <button type="button" id="btnPlayTts" class="btn-predict" style="padding: 0.6rem 1.5rem; border-radius: 999px; display: inline-flex; align-items: center; gap: 0.5rem; font-size: 0.9rem; background: var(--color-deep-blue); box-shadow: none;">
+                            <span id="lblListenText">🔊 Listen to Results</span>
+                        </button>
+                        <audio id="ttsAudio" style="display: none;"></audio>
+                    </div>
+
+                    <div id="recommendationsBox" style="display: none; margin-top: 1.5rem; text-align: left; background: var(--color-gray-50); padding: 1.25rem; border-radius: var(--radius-md); border: 1px solid var(--color-gray-200);">
+                        <p id="recTitle" style="font-size: 0.95rem; font-weight: 600; color: var(--color-teal); margin-bottom: 0.75rem;">Personalised Recommendations</p>
+                        <ul id="recommendationsList" style="font-size: 0.88rem; color: var(--color-gray-700); padding-left: 1.2rem; margin: 0; display: flex; flex-direction: column; gap: 0.6rem; line-height: 1.4;">
+                        </ul>
+                    </div>
+                </div>
+
+                <div class="info-card">
+                    <p class="info-title">Top Predictors (LR Coefficients)</p>
+                    <div class="feature-bar-list">
+                        <div class="feature-bar-item">
+                            <div class="feature-bar-header"><span>Thalassemia</span><span>0.95</span></div>
+                            <div class="feature-bar-track"><div class="feature-bar-fill" style="width:95%"></div></div>
+                        </div>
+                        <div class="feature-bar-item">
+                            <div class="feature-bar-header"><span>Chest Pain Type</span><span>0.88</span></div>
+                            <div class="feature-bar-track"><div class="feature-bar-fill" style="width:88%"></div></div>
+                        </div>
+                        <div class="feature-bar-item">
+                            <div class="feature-bar-header"><span>Blocked Vessels</span><span>0.82</span></div>
+                            <div class="feature-bar-track"><div class="feature-bar-fill" style="width:82%"></div></div>
+                        </div>
+                        <div class="feature-bar-item">
+                            <div class="feature-bar-header"><span>ST Depression</span><span>0.76</span></div>
+                            <div class="feature-bar-track"><div class="feature-bar-fill" style="width:76%"></div></div>
+                        </div>
+                        <div class="feature-bar-item">
+                            <div class="feature-bar-header"><span>Max Heart Rate</span><span>−0.68</span></div>
+                            <div class="feature-bar-track"><div class="feature-bar-fill" style="width:68%; background: linear-gradient(90deg, #e84e4e, #f87171)"></div></div>
+                        </div>
+                        <div class="feature-bar-item">
+                            <div class="feature-bar-header"><span>Risk Score (age×chol/1000 + bp/100)</span><span>0.61</span></div>
+                            <div class="feature-bar-track"><div class="feature-bar-fill" style="width:61%"></div></div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="model-stats-card">
+                    <p class="info-title">Model Accuracy</p>
+                    <div class="model-stat-row">
+                        <span class="model-stat-name">Logistic Regression</span>
+                        <span class="model-stat-badge">86.9% · AUC 0.952</span>
+                    </div>
+                    <div class="model-stat-row">
+                        <span class="model-stat-name">Random Forest</span>
+                        <span class="model-stat-badge">~85%</span>
+                    </div>
+                    <div class="model-stat-row">
+                        <span class="model-stat-name">SVM (RBF)</span>
+                        <span class="model-stat-badge">~84%</span>
+                    </div>
+                    <div class="model-stat-row">
+                        <span class="model-stat-name">XGBoost</span>
+                        <span class="model-stat-badge">~86%</span>
+                    </div>
+                    <div class="model-stat-row">
+                        <span class="model-stat-name">LightGBM</span>
+                        <span class="model-stat-badge">~87%</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="contact" id="disclaimer" style="padding: 3rem 2rem;">
+        <div class="section-inner">
+            <div class="work-extra">
+                <h4 id="lblDisclaimerTitle">⚠️ Important Disclaimer</h4>
+                <ul id="lblDisclaimerList">
+                    <li>This tool is for educational and research purposes only</li>
+                    <li>Predictions are based on a dataset of 303 patients — not a clinical diagnostic tool</li>
+                    <li>Always consult a qualified healthcare professional for medical advice</li>
+                    <li>Model outputs are probabilistic estimates, not definitive diagnoses</li>
+                    <li>Derived risk score = (age × cholesterol / 1000) + (resting BP / 100)</li>
+                </ul>
+            </div>
+        </div>
+    </section>
+
+    <footer class="footer">
+        <div class="footer-inner">
+            <span>© 2026 Heart Disease EDA &amp; Prediction</span>
+            <span>End-to-end pipeline · data cleaning → EDA → five ML models → comparison</span>
+        </div>
+    </footer>
+
+    <script>
+        /* ── Nav scroll effect ── */
+        const navbar = document.getElementById('navbar');
+        window.addEventListener('scroll', () => {
+            navbar.classList.toggle('scrolled', window.scrollY > 10);
+        });
+
+        /* ── Mobile nav toggle ── */
+        const navToggle = document.getElementById('navToggle');
+        const navLinks  = document.getElementById('navLinks');
+        navToggle.addEventListener('click', () => {
+            navLinks.classList.toggle('open');
+        });
+
+        /* ── Active nav link style ── */
+        document.querySelectorAll('.nav-link-active').forEach(el => {
+            el.style.color = 'var(--color-teal)';
+        });
+
+        /* ── Model chip selection ── */
+        const chips = document.querySelectorAll('.model-chip[data-model]');
+        let selectedModel = 'logistic';
+        chips.forEach(chip => {
+            chip.addEventListener('click', () => {
+                chips.forEach(c => c.classList.remove('active'));
+                chip.classList.add('active');
+                selectedModel = chip.dataset.model;
+            });
+        });
+
+        /* Clean markers/formatting out for natural audio text synthesis output */
+        function cleanTextForTTS(text) {
+            let clean = text.replace(/\*\*/g, '');
+            clean = clean.replace(/[\u{1F300}-\u{1F6FF}\u{1F900}-\u{1F9FF}\u{2600}-\u{26FF}\u{2700}-\u{27BF}\u{1F600}-\u{1F64F}]/gu, '');
+            return clean.trim();
+        }
+
+        /* ── Text-to-Speech Engine ── */
+        async function playTTS(text, lang) {
+            try {
+                const btn = document.getElementById('btnPlayTts');
+                btn.disabled = true;
+                btn.style.opacity = '0.7';
+                const response = await fetch('http://127.0.0.1:8000/tts', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ text, lang })
+                });
+                if (!response.ok) throw new Error("Failed to synthesize speech");
+                const blob = await response.blob();
+                const audioUrl = URL.createObjectURL(blob);
+                const audioEl = document.getElementById('ttsAudio');
+                audioEl.src = audioUrl;
+                audioEl.play();
+            } catch (err) {
+                console.error("TTS Error:", err);
+            } finally {
+                const btn = document.getElementById('btnPlayTts');
+                btn.disabled = false;
+                btn.style.opacity = '1';
+            }
+        }
+        document.getElementById('btnPlayTts').addEventListener('click', () => {
+            if (window.lastSpeechText && window.lastSpeechLang) {
+                playTTS(window.lastSpeechText, window.lastSpeechLang);
+            }
+        });
+
+        /* ── Form submission ── */
+        const form       = document.getElementById('predictionForm');
+        const predictBtn = document.getElementById('predictBtn');
+        const spinner    = document.getElementById('spinner');
+        const btnLabel   = document.getElementById('predictBtnLabel');
+        const alertBox   = document.getElementById('formAlert');
+        const gauge      = document.getElementById('resultGauge');
+        const gaugePct   = document.getElementById('gaugePct');
+        const verdictEl  = document.getElementById('resultVerdict');
+        const descEl     = document.getElementById('resultDesc');
+
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+
+            const data = new FormData(form);
+            const required = ['age','sex','chest_pain','resting_bp','cholesterol','fasting_bs',
+                              'resting_ecg','max_hr','exercise_angina','oldpeak','st_slope','ca','thal'];
+            const missing = required.filter(k => !data.get(k));
+            if (missing.length) {
+                alertBox.classList.add('show');
+                return;
+            }
+            alertBox.classList.remove('show');
+
+            predictBtn.disabled = true;
+            spinner.style.display = 'block';
+            btnLabel.textContent = currentLang === 'km' ? 'កំពុងគណនា…' : 'Predicting…';
+
+            try {
+                // Payload keys match PredictionInput field names in app.py exactly
+                const payload = {
+                    age:             parseFloat(data.get('age')),
+                    gender:          parseInt(data.get('sex')),
+                    chest_pain_type: parseInt(data.get('chest_pain')),
+                    resting_bp:      parseFloat(data.get('resting_bp')),
+                    cholesterol:     parseFloat(data.get('cholesterol')),
+                    fasting_bs:      parseInt(data.get('fasting_bs')),
+                    resting_ecg:     parseInt(data.get('resting_ecg')),
+                    max_heart_rate:  parseFloat(data.get('max_hr')),
+                    exercise_angina: parseInt(data.get('exercise_angina')),
+                    oldpeak:         parseFloat(data.get('oldpeak')),
+                    st_slope:        parseInt(data.get('st_slope')),
+                    ca:              parseInt(data.get('ca')),
+                    thal:            parseInt(data.get('thal')),
+                    model:           selectedModel,
+                    lang:            currentLang
+                };
+
+                const response = await fetch('http://127.0.0.1:8000/predict', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                if (!response.ok) {
+                    const errText = await response.text();
+                    throw new Error(errText || 'API error');
+                }
+
+                const result = await response.json();
+                const isHigh = result.prediction === 1 || result.risk_score >= 0.5;
+
+                gauge.className = `result-gauge ${isHigh ? 'high' : 'low'}`;
+                gaugePct.textContent = `${result.risk_percent}%`;
+                verdictEl.textContent = result.verdict;
+                verdictEl.className = `result-verdict ${isHigh ? 'high-risk' : 'low-risk'}`;
+                
+                const modelDisplay = selectedModel === 'xgboost' ? 'XGBoost' : (selectedModel === 'lightgbm' ? 'LightGBM' : selectedModel);
+                if (currentLang === 'km') {
+                    descEl.innerHTML = `ម៉ូដែល <strong>${modelDisplay}</strong> ប៉ាន់ប្រមាណថាមានលទ្ធភាព <strong>${result.risk_percent}%</strong> នៃលទ្ធផលវិជ្ជមានជំងឺបេះដូង។`;
+                } else {
+                    descEl.innerHTML = `The <strong>${modelDisplay}</strong> model estimates a <strong>${result.risk_percent}%</strong> probability of heart disease.`;
+                }
+
+                let compiledSpeech = result.verdict + ". ";
+                if (result.recommendations && result.recommendations.length > 0) {
+                    compiledSpeech += (currentLang === 'km' ? "ការណែនាំ៖ " : "Recommendations: ");
+                    result.recommendations.forEach(rec => {
+                        compiledSpeech += cleanTextForTTS(rec) + ". ";
+                    });
+                }
+                window.lastSpeechText = compiledSpeech;
+                window.lastSpeechLang = currentLang;
+                document.getElementById('ttsControls').style.display = 'block';
+
+                const recList = document.getElementById('recommendationsList');
+                if (result.recommendations && result.recommendations.length > 0) {
+                    recList.innerHTML = result.recommendations.map(r => `<li>${r.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')}</li>`).join('');
+                    document.getElementById('recommendationsBox').style.display = 'block';
+                } else {
+                    document.getElementById('recommendationsBox').style.display = 'none';
+                }
+
+            } catch (err) {
+                console.error(err);
+                alertBox.innerHTML = `<svg width="16" height="16" viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="7" stroke="#dc2626" stroke-width="1.5"/><path d="M8 5v3M8 11v.5" stroke="#dc2626" stroke-width="1.5" stroke-linecap="round"/></svg> Error calling prediction API: ${err.message}`;
+                alertBox.classList.add('show');
+            } finally {
+                predictBtn.disabled = false;
+                spinner.style.display = 'none';
+                btnLabel.textContent = currentLang === 'km' ? 'ទស្សន៍ទាយហានិភ័យ' : 'Predict Risk';
+            }
+        });
+
+        /* Reset handler */
+        document.getElementById('resetBtn').addEventListener('click', () => {
+            alertBox.classList.remove('show');
+            gauge.className = 'result-gauge idle';
+            gaugePct.textContent = '—';
+            verdictEl.textContent = currentLang === 'km' ? 'រង់ចាំការបញ្ចូល' : 'Awaiting input';
+            verdictEl.className = 'result-verdict';
+            descEl.innerHTML = currentLang === 'km' ? 'បញ្ចូលតម្លៃនៅផ្នែកខាងឆ្វេង ហើយចុច <strong>ទស្សន៍ទាយហានិភ័យ</strong> ដើម្បីមើលការវាយតម្លៃ។' : 'Enter clinical values on the left and click <strong>Predict Risk</strong> to see the model\'s assessment.';
+            document.getElementById('recommendationsBox').style.display = 'none';
+            document.getElementById('ttsControls').style.display = 'none';
+            window.lastSpeechText = '';
+            window.lastSpeechLang = '';
+        });
+
+        const uiTranslations = {
+            en: {
+                clin_input: "Clinical Input",
+                enter_data: "Enter Patient Data.",
+                intro: "Fill in all 13 clinical features used by the models. Values outside normal ranges will be highlighted. All fields are required.",
+                lblModel: "Select prediction model",
+                formTitle: "Clinical Measurements",
+                formSub: "13 features · derived risk score (age×chol/1000 + bp/100) computed automatically",
+                btnPredict: "Predict Risk",
+                btnReset: "Reset",
+                resultTitle: "Prediction Result",
+                awaiting: "Awaiting input",
+                descStart: "Enter clinical values on the left and click <strong>Predict Risk</strong> to see the model's assessment.",
+                recTitle: "Personalised Recommendations",
+                btnListen: "🔊 Listen to Results",
+                alertMsg: "Please fill in all required fields before predicting.",
+                age: "Age", sex: "Sex", cp: "Chest Pain Type", bp: "Resting Blood Pressure",
+                chol: "Serum Cholesterol", fbs: "Fasting Blood Sugar > 120 mg/dL", ecg: "Resting ECG Results",
+                maxHr: "Max Heart Rate", exAng: "Exercise-Induced Angina", oldpeak: "ST Depression (Oldpeak)",
+                slope: "ST Slope", thal: "Blood Flow Test (Thal)", ca: "Blocked Vessels (0–3)",
+                disTitle: "⚠️ Important Disclaimer",
+                disList: "<li>This tool is for educational and research purposes only</li><li>Predictions are based on a dataset of 303 patients — not a clinical diagnostic tool</li><li>Always consult a qualified healthcare professional for medical advice</li><li>Model outputs are probabilistic estimates, not definitive diagnoses</li><li>Derived risk score = (age × cholesterol / 1000) + (resting BP / 100)</li>"
+            },
+            km: {
+                clin_input: "ទិន្នន័យគ្លីនិក",
+                enter_data: "បញ្ចូលទិន្នន័យអ្នកជំងឺ។",
+                intro: "សូមបំពេញលក្ខណៈគ្លីនិកទាំង 13 ។ តម្លៃក្រៅពីជួរធម្មតានឹងត្រូវបានរំលេច។ គ្រប់វាលទាំងអស់គឺតម្រូវអោយបំពេញ។",
+                lblModel: "ជ្រើសរើសម៉ូដែលទស្សន៍ទាយ",
+                formTitle: "ការវាស់វែងគ្លីនិក",
+                formSub: "លក្ខណៈ 13 · ពិន្ទុហានិភ័យ (អាយុ×កូឡេស្តេរ៉ុល/1000 + សម្ពាធឈាម/100) គណនាដោយស្វ័យប្រវត្តិ",
+                btnPredict: "ទស្សន៍ទាយហានិភ័យ",
+                btnReset: "កំណត់ឡើងវិញ",
+                resultTitle: "លទ្ធផលវាយតម្លៃ",
+                awaiting: "រង់ចាំការបញ្ចូល",
+                descStart: "បញ្ចូលតម្លៃនៅផ្នែកខាងឆ្វេង ហើយចុច <strong>ទស្សន៍ទាយហានិភ័យ</strong> ដើម្បីមើលការវាយតម្លៃ។",
+                recTitle: "អនុសាសន៍ផ្ទាល់ខ្លួន",
+                btnListen: "🔊 ស្តាប់លទ្ធផល",
+                alertMsg: "សូមបំពេញគ្រប់ចន្លោះដែលត្រូវការមុនពេលដំណើរការទស្សន៍ទាយ។",
+                age: "អាយុ (ឆ្នាំ)", sex: "ភេទ", cp: "ប្រភេទនៃការឈឺទ្រូង", bp: "សម្ពាធឈាមសម្រាក (mmHg)",
+                chol: "កូឡេស្តេរ៉ុលក្នុងឈាម (mg/dL)", fbs: "ជាតិស្ករក្នុងឈាមពេលតមអាហារ > 120 mg/dL", ecg: "លទ្ធផលពិនិត្យ ECG សម្រាក",
+                maxHr: "អត្រាចង្វាក់បេះដូងអតិបរមា (bpm)", exAng: "ការឈឺទ្រូងបង្កដោយលំហាត់ប្រាណ", oldpeak: "ការធ្លាក់ចុះរលក ST (Oldpeak mm)",
+                slope: "ទម្រង់ជម្រាលរលក ST", thal: "តេស្តលំហូរឈាមបេះដូង (Thal)", ca: "ចំនួនសរសៃឈាមដែលស្ទះ (0–3)",
+                disTitle: "⚠️ ការមិនទទួលខុសត្រូវដ៏សំខាន់",
+                disList: "<li>ឧបករណ៍នេះគឺសម្រាប់គោលបំណងអប់រំ និងការស្រាវជ្រាវតែប៉ុណ្ណោះ</li><li>ការទស្សន៍ទាយគឺផ្អែកលើសំណុំទិន្នន័យអ្នកជំងឺ 303 នាក់ - មិនមែនជាឧបករណ៍វិនិច្ឆ័យគ្លីនិកទេ</li><li>ត្រូវតែពិគ្រោះជាមួយគ្រូពេទ្យជំនាញជានិច្ច ដើម្បីទទួលបានការប្រឹក្សាវេជ្ជសាស្ត្រ</li><li>លទ្ធផលពីម៉ូដែលគ្រាន់តែជាការប៉ាន់ស្មានជាប្រូបាប៊ីលីតេ មិនមែនជាការវិនិច្ឆ័យច្បាស់លាស់ឡើយ</li><li>ពិន្ទុហានិភ័យគណនា = (អាយុ × កូឡេស្តេរ៉ុល / 1000) + (សម្ពាធឈាម / 100)</li>"
+            }
+        };
+
+        let currentLang = localStorage.getItem('appLang') || 'en';
+        window.setLang = function(lang) {
+            currentLang = lang;
+            localStorage.setItem('appLang', lang);
+            document.getElementById('btnEn').classList.toggle('active', lang === 'en');
+            document.getElementById('btnKm').classList.toggle('active', lang === 'km');
+            
+            const t = uiTranslations[lang];
+            document.getElementById('sectionLabel').textContent = t.clin_input;
+            document.getElementById('sectionHeading').textContent = t.enter_data;
+            document.getElementById('sectionIntro').textContent = t.intro;
+            document.getElementById('lblModel').textContent = t.lblModel;
+            document.getElementById('formTitle').textContent = t.formTitle;
+            document.getElementById('formSub').textContent = t.formSub;
+            document.getElementById('predictBtnLabel').textContent = t.btnPredict;
+            document.getElementById('resetBtn').textContent = t.btnReset;
+            document.getElementById('resultLabelTitle').textContent = t.resultTitle;
+            document.getElementById('recTitle').textContent = t.recTitle;
+            document.getElementById('lblListenText').textContent = t.btnListen;
+            document.getElementById('txtAlertMsg').textContent = t.alertMsg;
+            
+            // Dynamic form label adjustments
+            document.getElementById('lblAgeText').textContent = t.age;
+            document.getElementById('lblSexText').textContent = t.sex;
+            document.getElementById('lblChestText').textContent = t.cp;
+            document.getElementById('lblBPText').textContent = t.bp;
+            document.getElementById('lblCholText').textContent = t.chol;
+            document.getElementById('lblFBSText').textContent = t.fbs;
+            document.getElementById('lblECGText').textContent = t.ecg;
+            document.getElementById('lblMaxHRText').textContent = t.maxHr;
+            document.getElementById('lblExAnginaText').textContent = t.exAng;
+            document.getElementById('lblOldpeakText').textContent = t.oldpeak;
+            document.getElementById('lblSlopeText').textContent = t.slope;
+            document.getElementById('lblThalText').textContent = t.thal;
+            document.getElementById('lblCAText').textContent = t.ca;
+
+            // Disclaimer localized content
+            document.getElementById('lblDisclaimerTitle').textContent = t.disTitle;
+            document.getElementById('lblDisclaimerList').innerHTML = t.disList;
+
+            const currentVerdict = document.getElementById('resultVerdict').textContent;
+            if (currentVerdict === 'Awaiting input' || currentVerdict === 'រង់ចាំការបញ្ចូល') {
+                document.getElementById('resultVerdict').textContent = t.awaiting;
+                document.getElementById('resultDesc').innerHTML = t.descStart;
+            }
+        };
+        window.addEventListener('DOMContentLoaded', () => setLang(currentLang));
+    </script>
+</body>
+</html>
