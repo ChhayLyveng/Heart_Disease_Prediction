@@ -4,7 +4,6 @@ FastAPI backend — loads all 5 trained ML models from the model/ folder
 and exposes a /predict endpoint used by the frontend prediction page.
 """
 
-import os
 import joblib
 import numpy as np
 from pathlib import Path
@@ -112,14 +111,14 @@ def load_models():
         path = MODEL_DIR / filename
         if path.exists():
             MODELS[key] = joblib.load(path)
-            print(f"✔ Loaded {key}: {filename}")
+            print(f"OK: Loaded {key}: {filename}")
         else:
-            print(f"⚠ Model not found: {path}")
+            print(f"WARN: Model not found: {path}")
     
     scaler_path = MODEL_DIR / "scaler.pkl"
     if scaler_path.exists():
         SCALER = joblib.load(scaler_path)
-        print("✔ Loaded feature standardizer: scaler.pkl")
+        print("OK: Loaded feature standardizer: scaler.pkl")
 
 load_models()
 
