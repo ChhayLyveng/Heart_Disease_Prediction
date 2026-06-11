@@ -1,6 +1,6 @@
 """
 Heart Disease Prediction API
-FastAPI backend — loads all 5 trained ML models from the model/ folder
+FastAPI backend — loads all 5 trained ML models from the api/model/ folder
 and exposes a /predict endpoint used by the frontend prediction page.
 """
 
@@ -89,8 +89,7 @@ app.add_middleware(
 )
 
 # ─── Paths and Model Loader ───────────────────────────────────────────────────
-BASE_DIR   = Path(__file__).resolve().parent.parent
-MODEL_DIR  = BASE_DIR / "backend" / "model"
+MODEL_DIR  = Path(__file__).resolve().parent / "model"
 
 MODELS = {}
 SCALER = None
